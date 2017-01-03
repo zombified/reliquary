@@ -1,0 +1,25 @@
+{
+    "debug": true,
+
+    "address": 8080,
+    "root_user": { "password": "admin" },
+
+    "applications": [
+        "pserver.reliquary"
+    ],
+
+    "reliquary": {},
+
+    "databases": [{
+        "zodb": {
+            "storage": "ZODB",
+            "path": "var/Data.fs"
+        }
+    }],
+
+    "auth_user_identifiers": [
+    ],
+
+    "auth_token_validators": [
+    ]
+}

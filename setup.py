@@ -25,27 +25,19 @@ with open(os.path.join(here, 'CHANGES.txt')) as f:
 
 requires = [
     'chardet',
-    'Paste',
     'python-debian',
-    'pyramid',
-    'pyramid_chameleon',
-    'pyramid_debugtoolbar',
-    'pyramid_tm',
     'pytz',
+    'plone.server',
     'requests',
-    'sqlalchemy',
-    'waitress',
-    'zope.sqlalchemy',
     ]
 
 tests_require = [
-    'WebTest >= 1.3.1',  # py3 compat
-    'pytest',  # includes virtualenv
-    'pytest-cov',
+    'pytest',
+    'zope.testing',
     ]
 
 setup(name='reliquary',
-      version='0.1.0',
+      version='0.2.0',
       description='reliquary',
       long_description=README + '\n\n' + CHANGES,
       classifiers=[
@@ -70,11 +62,11 @@ setup(name='reliquary',
       },
       install_requires=requires,
       entry_points={
-          "paste.app_factory": [
-              "main = reliquary:main"
+          'plone.server': [
+              'include = pserver.courier',
           ],
-          "console_scripts": [
-              "init_reliquary = reliquary.scripts:init_reliquary",
-              "reindex_reliquary = reliquary.scripts:reindex",
+          'console_scripts': [
+              'init_reliquary = reliquary.scripts:init_reliquary',
+              'reindex_reliquary = reliquary.scripts:reindex',
           ],
       })
