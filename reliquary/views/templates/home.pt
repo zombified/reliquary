@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Reliquary</title>
+</head>
+<body>
+    <h1>The Reliquary</h1>
+    <ul>
+        <li tal:repeat="index indices">
+            ${index['channel']}/${index['name']}
+            <ul>
+                <li><a href="/api/v1/autoindex/${index['channel']}/${index['name']}/">autoindex</a></li>
+                <li><a href="/api/v1/python/${index['channel']}/${index['name']}/simple">python</a></li>
+                <li><a href="/api/v1/python/proxy/${index['channel']}/${index['name']}/simple">python (pypi) proxy</a></li>
+                <li><a href="/api/v1/commonjs/${index['channel']}/${index['name']}/">common js registry</a></li>
+                <li><a href="/api/v1/commonjs/proxy/${index['channel']}/${index['name']}/">common js registry (npm) proxy</a></li>
+            </ul>
+        </li>
+    </ul>
+</body>
+</html>

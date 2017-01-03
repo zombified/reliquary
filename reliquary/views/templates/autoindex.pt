@@ -1,0 +1,8 @@
+<html>
+<head><title>Index of ${display_path}</title></head>
+<body bgcolor="white">
+<h1>Index of ${display_path}</h1><hr><pre><a href="../">../</a>
+<tal:block tal:repeat="relic relics">${structure: relic}
+</tal:block>
+</pre><hr></body>
+</html>

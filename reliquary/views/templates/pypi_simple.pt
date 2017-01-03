@@ -1,0 +1,4 @@
+<!DOCTYPE html><html><head><title>Simple Index</title></head><body>
+<tal:block tal:repeat="line lines">${structure: line}
+</tal:block>
+</body></html>
