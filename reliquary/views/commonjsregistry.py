@@ -8,6 +8,7 @@ from pyramid.view import view_config
 from reliquary.models import DBSession, Relic
 from reliquary.utils import (
     download_response,
+    fetch_index_from_names,
     fetch_relic_if_not_exists,
     split_commonjs_name,
 )
@@ -21,7 +22,11 @@ def commonjs_registry_root(req):
     channel = req.matchdict.get('channel', 'default')
     index = req.matchdict.get('index', 'default')
 
-    relics = DBSession.query(Relic).filter_by(channel=channel, index=index)
+    indexobj = fetch_index_from_names(channel, index)
+    if not indexobj:
+        return HTTPNotFound()
+
+    relics = DBSession.query(Relic).filter_by(index_id=indexobj.uid)
     uniqrelics = {}
     for relic in relics:
         matches = split_commonjs_name(relic.name)
@@ -54,12 +59,16 @@ def commonjs_registry_package_root(req):
     if not channel or not index or not package:
         return HTTPNotFound()
 
+    indexobj = fetch_index_from_names(channel, index)
+    if not indexobj:
+        return HTTPNotFound()
+
     # this gets all packages that start with the requested package name,
     # but it may include more than the intended package -- from here,
     # each relic name needs to be broken down into it's name and version
     # then compared with the the given name
     results = DBSession.query(Relic) \
-                       .filter_by(channel=channel, index=index) \
+                       .filter_by(index_id=indexobj.uid) \
                        .filter(Relic.name.startswith(package))
     packageobjroot = dict(name=package, versions=dict())
     for relic in results:
@@ -93,12 +102,16 @@ def commonjs_registry_package_version(req):
     if not channel or not index or not package or not version:
         return HTTPNotFound()
 
+    indexobj = fetch_index_from_names(channel, index)
+    if not indexobj:
+        return HTTPNotFound()
+
     # this gets all packages that start with the requested package name,
     # but it may include more than the intended package -- from here,
     # each relic name needs to be broken down into it's name and version
     # then compared with the the given name
     results = DBSession.query(Relic) \
-                       .filter_by(channel=channel, index=index) \
+                       .filter_by(index_id=indexobj.uid) \
                        .filter(Relic.name.startswith(package))
     packageversionobj = dict()
     for relic in results:

@@ -4,7 +4,10 @@ from pyramid.httpexceptions import HTTPNotFound
 from pyramid.response import Response
 from pyramid.view import view_config
 
-from reliquary.utils import validate_reliquary_location, download_response
+from reliquary.utils import (
+    download_response,
+    validate_reliquary_location,
+)
 
 
 @view_config(route_name='put_relic', request_method='PUT', permission='put')
@@ -36,6 +39,8 @@ def put_relic(req):
     req.body_file.seek(0)
     with open(relic_path, 'wb') as fout:
         fout.write(req.body_file.read())
+
+    # TODO: index channel/index/relic
 
     return Response('{"status":"ok"}', content_type='application/json')
 

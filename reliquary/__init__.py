@@ -64,11 +64,11 @@ def main(global_config, **settings):
     #config.add_static_view('static', 'static', cache_max_age=3600)
 
     # ui
-    config.add_route('home', '/', request_method='GET')
+    config.add_route('home', '/api/v1/', request_method='GET')
 
     # basic api
-    config.add_route('put_relic', '/api/v1/{channel}/{index}/{relic_name}', request_method='PUT')
-    config.add_route('get_relic', '/api/v1/{channel}/{index}/{relic_name}', request_method='GET')
+    config.add_route('put_relic', '/api/v1/raw/{channel}/{index}/{relic_name}', request_method='PUT')
+    config.add_route('get_relic', '/api/v1/raw/{channel}/{index}/{relic_name}', request_method='GET')
 
     # autoindex (nginx autogenerate index page compatible)
     config.add_route('autoindex', '/api/v1/autoindex/{channel}/{index}/', request_method='GET')
@@ -102,6 +102,25 @@ def main(global_config, **settings):
     config.add_route('commonjs_registry_root', '/api/v1/commonjs/{channel}/{index}/', request_method='GET')
     config.add_route('commonjs_registry_package_root', '/api/v1/commonjs/{channel}/{index}/{package}/', request_method='GET')
     config.add_route('commonjs_registry_package_version', '/api/v1/commonjs/{channel}/{index}/{package}/{version}/', request_method='GET')
+
+    # debian repository (https://wiki.debian.org/RepositoryFormat)
+    #   additional info: http://www.ibiblio.org/gferg/ldp/giles/repository/repository-2.html
+    # these are the minimum required paths
+    # example sources.list entry: deb http://127.0.0.1/api/v1/debian/wildcard trusty main
+    config.add_route('debian_distrelease', '/api/v1/debian/{channel}/dist/{index}/Release', request_method='GET')
+    config.add_route('debian_archrelease', '/api/v1/debian/{channel}/dist/{index}/main/binary-{arch}/Release', request_method='GET')
+    config.add_route('debian_archpackages', '/api/v1/debian/{channel}/dist/{index}/main/binary-{arch}/Packages', request_method='GET')
+    config.add_route('debian_archpackagesgz', '/api/v1/debian/{channel}/dist/{index}/main/binary-{arch}/Packages.gz', request_method='GET')
+    config.add_route('debian_archpackagesbz2', '/api/v1/debian/{channel}/dist/{index}/main/binary-{arch}/Packages.bz2', request_method='GET')
+    config.add_route('debian_poolpackage', '/api/v1/debian/{channel}/pool/{index}/{relic_name}', request_method='GET')
+    # additional paths that could be just a directory listing of some sort (like autoindex)
+    config.add_route('debian_distrootindex', '/api/v1/debian/{channel}/dist/', request_method='GET')
+    config.add_route('debian_channelindex', '/api/v1/debian/{channel}/', request_method='GET')
+    config.add_route('debian_archindex', '/api/v1/debian/{channel}/dist/{index}/main/binary-{arch}/', request_method='GET')
+    config.add_route('debian_compindex', '/api/v1/debian/{channel}/dist/{index}/main/', request_method='GET')
+    config.add_route('debian_distindex', '/api/v1/debian/{channel}/dist/{index}/', request_method='GET')
+    config.add_route('debian_pooldistindex', '/api/v1/debian/{channel}/pool/{index}/', request_method='GET')
+    config.add_route('debian_poolrootindex', '/api/v1/debian/{channel}/pool/', request_method='GET')
 
     config.add_notfound_view(notfound, append_slash=True)
 

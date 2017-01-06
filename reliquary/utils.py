@@ -1,3 +1,4 @@
+import logging
 import os
 import re
 import requests
@@ -6,7 +7,43 @@ import transaction
 from mimetypes import guess_type
 from pyramid.response import Response
 
-from reliquary.models import DBSession, Relic
+from reliquary.models import Channel, DBSession, Index, Relic
+
+
+logger = logging.getLogger(__name__)
+
+
+def fetch_channel_from_name(name):
+    try:
+        channelobj = DBSession.query(Channel) \
+                              .filter_by(name=name) \
+                              .one()
+    except:
+        logger.error('no channel object, or more than one found for "{}"'
+                     .format(name))
+        return None
+
+    return channelobj
+
+
+def fetch_index_from_name(channelobj, name):
+    try:
+        indexobj = DBSession.query(Index) \
+                            .filter_by(channel_id=channelobj.uid, name=name) \
+                            .one()
+    except:
+        logger.error('no index object, or more than one found for {}'
+                     .format(name))
+        return None
+
+    return indexobj
+
+
+def fetch_index_from_names(channel, index):
+    channelobj = fetch_channel_from_name(channel)
+    if not channelobj:
+        return None
+    return fetch_index_from_name(channelobj, index)
 
 
 def validate_reliquary_location(req, channel, index, relic_name=None):
@@ -44,14 +81,18 @@ def pypi_normalize_package_name(name):
 
 
 def fetch_relic_if_not_exists(req, channel, index, relic_name, upstream):
+    indexobj = fetch_index_from_names(channel, index)
+    if not indexobj:
+        return
+
     relics = DBSession.query(Relic) \
-                      .filter_by(channel=channel, index=index, name=relic_name)
+                      .filter_by(index_id=indexobj.uid, name=relic_name)
     # doesn't exist locally yet
     if relics.count() <= 0:
         # get valid paths, if there are valid paths to be had
         pathcheck = validate_reliquary_location(req, channel, index, relic_name=relic_name)  # noqa
         if type(pathcheck) == Response:
-            return pathcheck
+            return
         reliquary, relic_folder, relic_path = pathcheck
 
         # create the channel/index if it doesn't exist
@@ -68,8 +109,7 @@ def fetch_relic_if_not_exists(req, channel, index, relic_name, upstream):
         # index
         with transaction.manager:
             DBSession.add(Relic(dirty=False,
-                                channel=channel,
-                                index=index,
+                                index_id=indexobj.uid,
                                 name=relic_name,
                                 mtime=str(os.path.getmtime(relic_path)),
                                 size=os.path.getsize(relic_path)))

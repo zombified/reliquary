@@ -12,7 +12,7 @@ from .pypi import (
     pypi_proxy_package,
 )
 
-from reliquary.models import DBSession, Relic
+from reliquary.models import Channel, DBSession, Index
 
 
 @forbidden_view_config()
@@ -28,9 +28,11 @@ def forbidden_view(req):
     request_method='GET',
     permission='view')
 def home(req):
-    result = DBSession.query(Relic.channel, Relic.index).distinct(Relic.channel, Relic.index)
+    result = DBSession.query(Channel) \
+                      .join(Index.channel) \
+                      .values(Channel.name, Index.name)
     indices = []
-    for relic in result:
-        indices.append(dict(channel=relic.channel, name=relic.index))
+    for (channel, index) in result:
+        indices.append(dict(channel=channel, name=index))
     indices.sort(key=lambda x: x['channel']+x['name'])
     return dict(indices=indices)

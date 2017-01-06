@@ -7,6 +7,7 @@ from pyramid.view import view_config
 from reliquary.models import DBSession, Relic
 from reliquary.utils import (
     download_response,
+    fetch_index_from_names,
     fetch_relic_if_not_exists,
     pypi_normalize_package_name,
     split_pypi_name,
@@ -22,8 +23,12 @@ def pypi_simple(req):
     channel = req.matchdict.get('channel', 'default')
     index = req.matchdict.get('index', 'default')
 
+    indexobj = fetch_index_from_names(channel, index)
+    if not indexobj:
+        return dict(lines=[])
+
     lines = []
-    relics = DBSession.query(Relic).filter_by(channel=channel, index=index)
+    relics = DBSession.query(Relic).filter_by(index_id=indexobj.uid)
     uniqrelics = {}
     for relic in relics:
         matches = split_pypi_name(relic.name)
@@ -57,9 +62,12 @@ def pypi_simple_package(req):
                         status_code=404)
     package = pypi_normalize_package_name(package)
 
+    indexobj = fetch_index_from_names(channel, index)
+    if not indexobj:
+        return dict(lines=[])
+
     lines = []
-    relics = DBSession.query(Relic) \
-                      .filter_by(channel=channel, index=index)
+    relics = DBSession.query(Relic).filter_by(index_id=indexobj.uid)
     matched = []
     for relic in relics:
         rparts = split_pypi_name(relic.name)
