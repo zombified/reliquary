@@ -8,7 +8,7 @@
     <h1>The Reliquary</h1>
     <ul>
         <li tal:repeat="index indices">
-            ${index['channel']}/${index['name']}
+            ${index['channel']}/${index['name']} - <a href="/api/v1/debian/${index['channel']}">(channel) debian repo</a>
             <ul>
                 <li><a href="/api/v1/autoindex/${index['channel']}/${index['name']}/">autoindex</a></li>
                 <li><a href="/api/v1/python/${index['channel']}/${index['name']}/simple">python</a></li>

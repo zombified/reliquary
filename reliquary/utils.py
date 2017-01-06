@@ -14,6 +14,9 @@ logger = logging.getLogger(__name__)
 
 
 def fetch_channel_from_name(name):
+    if not name:
+        return None
+
     try:
         channelobj = DBSession.query(Channel) \
                               .filter_by(name=name) \
@@ -27,6 +30,9 @@ def fetch_channel_from_name(name):
 
 
 def fetch_index_from_name(channelobj, name):
+    if not name:
+        return None
+
     try:
         indexobj = DBSession.query(Index) \
                             .filter_by(channel_id=channelobj.uid, name=name) \
@@ -41,8 +47,6 @@ def fetch_index_from_name(channelobj, name):
 
 def fetch_index_from_names(channel, index):
     channelobj = fetch_channel_from_name(channel)
-    if not channelobj:
-        return None
     return fetch_index_from_name(channelobj, index)
 
 
@@ -218,3 +222,23 @@ def split_pypi_name(name):
     # and if none of the above match, then simply return the whole value as the
     # package name, with no version, and no extension
     return (name, None, None)
+
+
+# naming convention based on: https://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Source
+# returns a tuple of the following values:
+#   2. name
+#   3. version
+#   4. arch
+#   5. ext
+def split_debian_name(name):
+    # if the package name doesn't conform to this, it's probably not a valid
+    # package name
+    # group 1 = package name
+    # group 2 = version name
+    # group 3 = arch
+    # group 4 = ext
+    basicre = re.compile('^([a-z0-9+-.][a-z0-9+-.]+?)_([a-z0-9+-.][a-z0-9+-.]+?)(?:_([a-z0-9+-.][a-z0-9+-.]+?))?\.((?:orig\.)?tar\.gz|diff\.gz|dsc|deb)$')  # noqa
+    result = basicre.search(name)
+    if result:
+        return (result.group(1), result.group(2), result.group(3), result.group(4))  # noqa
+    return None
