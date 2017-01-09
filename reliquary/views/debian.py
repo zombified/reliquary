@@ -1,4 +1,6 @@
+import bz2
 import logging
+import gzip
 import time
 
 from pyramid.httpexceptions import HTTPNotFound
@@ -10,6 +12,7 @@ from reliquary.utils import (
     download_response,
     fetch_channel_from_name,
     fetch_index_from_names,
+    generate_debian_package_index,
     split_debian_name,
 )
 
@@ -264,3 +267,71 @@ def debian_poolpackage(req):
         return HTTPNotFound()
 
     return download_response(req, channel, index, relic_name)
+
+
+@view_config(
+    route_name='debian_archpackages',
+    request_method='GET',
+    permission='view')
+def debian_archpackages(req):
+    channel = req.matchdict.get('channel', None)
+    index = req.matchdict.get('index', None)
+    arch = req.matchdict.get('arch', None)
+
+    if not channel or not index or not arch:
+        return HTTPNotFound()
+
+    arch = arch.lower().strip()
+
+    indexobj = fetch_index_from_names(channel, index)
+    if not indexobj:
+        return HTTPNotFound()
+
+    packagestr = generate_debian_package_index(channel, index, arch)
+    return Response(packagestr, content_type="text/plain", status_code=200)
+
+
+@view_config(
+    route_name='debian_archpackagesgz',
+    request_method='GET',
+    permission='view')
+def debian_archpackagesgz(req):
+    channel = req.matchdict.get('channel', None)
+    index = req.matchdict.get('index', None)
+    arch = req.matchdict.get('arch', None)
+
+    if not channel or not index or not arch:
+        return HTTPNotFound()
+
+    arch = arch.lower().strip()
+
+    indexobj = fetch_index_from_names(channel, index)
+    if not indexobj:
+        return HTTPNotFound()
+
+    packagestr = generate_debian_package_index(channel, index, arch)
+    gzstr = gzip.compress(packagestr.encode())
+    return Response(gzstr, content_type="application/gzip", status_code=200)
+
+
+@view_config(
+    route_name='debian_archpackagesbz2',
+    request_method='GET',
+    permission='view')
+def debian_archpackagesbz2(req):
+    channel = req.matchdict.get('channel', None)
+    index = req.matchdict.get('index', None)
+    arch = req.matchdict.get('arch', None)
+
+    if not channel or not index or not arch:
+        return HTTPNotFound()
+
+    arch = arch.lower().strip()
+
+    indexobj = fetch_index_from_names(channel, index)
+    if not indexobj:
+        return HTTPNotFound()
+
+    packagestr = generate_debian_package_index(channel, index, arch)
+    bz2str = bz2.compress(packagestr.encode())
+    return Response(bz2str, content_type="application/x-bzip2", status_code=200)

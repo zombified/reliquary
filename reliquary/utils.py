@@ -8,7 +8,13 @@ from mimetypes import guess_type
 from pyramid.httpexceptions import HTTPNotFound
 from pyramid.response import Response
 
-from reliquary.models import Channel, DBSession, Index, Relic
+from reliquary.models import (
+    Channel,
+    DBSession,
+    DebInfo,
+    Index,
+    Relic,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -249,3 +255,58 @@ def split_debian_name(name):
     if result:
         return (result.group(1), result.group(2), result.group(3), result.group(4))  # noqa
     return None
+
+
+def generate_debian_package_index(channel, index, arch):
+    lines = []
+    archobjs = DBSession.query(Relic, DebInfo) \
+                        .filter(Relic.uid == DebInfo.relic_id) \
+                        .filter(DebInfo.architecture.ilike('%{0}%'.format(arch)))
+    for relic, debinfo in archobjs:
+        # we're possibly pulling only partial matches, so this just confirms the
+        # selection choice
+        arches = [a.lower().strip() for a in debinfo.architecture.split()]
+        if arch not in arches:
+            continue
+
+        lines.append("Package: {}".format(debinfo.package))
+        if debinfo.source:
+            lines.append("Source: {}".format(debinfo.source))
+        lines.append("Version: {}".format(debinfo.version))
+        if debinfo.section:
+            lines.append("Section: {}".format(debinfo.section))
+        if debinfo.section:
+            lines.append("Priority: {}".format(debinfo.priority))
+        lines.append("Architecture: {}".format(debinfo.architecture))
+        if debinfo.essential:
+            lines.append("Essential: {}".format(debinfo.essential))
+        if debinfo.depends:
+            lines.append("Depends: {}".format(debinfo.depends))
+        if debinfo.recommends:
+            lines.append("Recommends: {}".format(debinfo.recommends))
+        if debinfo.suggests:
+            lines.append("Suggests: {}".format(debinfo.suggests))
+        if debinfo.enhances:
+            lines.append("Enhances: {}".format(debinfo.enhances))
+        if debinfo.pre_depends:
+            lines.append("Pre-Depends: {}".format(debinfo.pre_depends))
+        if debinfo.installed_size:
+            lines.append("Installed-Size: {}".format(debinfo.installed_size))
+        lines.append("Maintainer: {}".format(debinfo.maintainer))
+        lines.append("Description: {}".format(debinfo.description))
+        if debinfo.homepage:
+            lines.append("Homepage: {}".format(debinfo.homepage))
+        if debinfo.built_using:
+            lines.append("Built-Using: {}".format(debinfo.built_using))
+        lines.append("Filename: {}".format(debinfo.filename))
+        lines.append("Size: {}".format(relic.size))
+        lines.append("MD5Sum: {}".format(debinfo.md5sum))
+        lines.append("SHA1: {}".format(debinfo.sha1))
+        lines.append("SHA256: {}".format(debinfo.sha256))
+        lines.append("SHA512: {}".format(debinfo.sha512))
+        lines.append("Description-md5: {}".format(debinfo.description_md5))
+        if debinfo.multi_arch:
+            lines.append("Multi-Arch: {}".format(debinfo.multi_arch))
+        lines.append("")
+
+    return "\n".join(lines)
