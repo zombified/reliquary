@@ -5,6 +5,7 @@ import requests
 import transaction
 
 from mimetypes import guess_type
+from pyramid.httpexceptions import HTTPNotFound
 from pyramid.response import Response
 
 from reliquary.models import Channel, DBSession, Index, Relic
@@ -51,6 +52,9 @@ def fetch_index_from_names(channel, index):
 
 
 def validate_reliquary_location(req, channel, index, relic_name=None):
+    if not channel or not index:
+        return HTTPNotFound()
+
     # make sure storage directory is set
     reliquary = req.registry.settings.get('reliquary.location', None)
     if not reliquary:
@@ -120,6 +124,9 @@ def fetch_relic_if_not_exists(req, channel, index, relic_name, upstream):
 
 
 def download_response(req, channel, index, relic_name):
+    if not channel or not index or not relic_name:
+        return HTTPNotFound()
+
     # get valid paths, if there are valid paths to be had
     pathcheck = validate_reliquary_location(
         req,

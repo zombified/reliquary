@@ -7,6 +7,7 @@ from pyramid.view import view_config
 
 from reliquary.models import DBSession, Index, Relic
 from reliquary.utils import (
+    download_response,
     fetch_channel_from_name,
     fetch_index_from_names,
     split_debian_name,
@@ -29,6 +30,7 @@ def fetch_channel_index_items(req, channelobj, route_name):
         ))
     items.sort(key=lambda x: x["text"])
     return items
+
 
 @view_config(
     route_name='debian_channelindex',
@@ -55,6 +57,7 @@ def debian_channelindex(req):
         show_updir=False,
     )
 
+
 @view_config(
     route_name='debian_poolrootindex',
     renderer='templates/debian_index.pt',
@@ -73,6 +76,7 @@ def debian_poolrootindex(req):
         datetime_generated=time.strftime("%Y-%m-%d %H:%M:%S"),
         show_updir=True,
     )
+
 
 @view_config(
     route_name='debian_pooldistindex',
@@ -103,6 +107,7 @@ def debian_pooldistindex(req):
         show_updir=True,
     )
 
+
 @view_config(
     route_name='debian_distrootindex',
     renderer='templates/debian_index.pt',
@@ -121,6 +126,7 @@ def debian_distrootindex(req):
         datetime_generated=time.strftime("%Y-%m-%d %H:%M:%S"),
         show_updir=True,
     )
+
 
 @view_config(
     route_name='debian_distindex',
@@ -153,6 +159,7 @@ def debian_distindex(req):
         datetime_generated=time.strftime("%Y-%m-%d %H:%M:%S"),
         show_updir=True,
     )
+
 
 @view_config(
     route_name='debian_compindex',
@@ -192,6 +199,7 @@ def debian_compindex(req):
         datetime_generated=time.strftime("%Y-%m-%d %H:%M:%S"),
         show_updir=True,
     )
+
 
 @view_config(
     route_name='debian_archindex',
@@ -241,3 +249,18 @@ def debian_archindex(req):
         datetime_generated=time.strftime("%Y-%m-%d %H:%M:%S"),
         show_updir=True,
     )
+
+
+@view_config(
+    route_name='debian_poolpackage',
+    request_method='GET',
+    permission='view')
+def debian_poolpackage(req):
+    channel = req.matchdict.get('channel', None)
+    index = req.matchdict.get('index', None)
+    relic_name = req.matchdict.get('relic_name', None)
+
+    if not channel or not index or not relic_name:
+        return HTTPNotFound()
+
+    return download_response(req, channel, index, relic_name)

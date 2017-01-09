@@ -24,7 +24,9 @@ with open(os.path.join(here, 'CHANGES.txt')) as f:
     CHANGES = f.read()
 
 requires = [
+    'chardet',
     'Paste',
+    'python-debian',
     'pyramid',
     'pyramid_chameleon',
     'pyramid_debugtoolbar',

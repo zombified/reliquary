@@ -112,7 +112,7 @@ def main(global_config, **settings):
     config.add_route('debian_archpackages', '/api/v1/debian/{channel}/dist/{index}/main/binary-{arch}/Packages', request_method='GET')              #
     config.add_route('debian_archpackagesgz', '/api/v1/debian/{channel}/dist/{index}/main/binary-{arch}/Packages.gz', request_method='GET')         #
     config.add_route('debian_archpackagesbz2', '/api/v1/debian/{channel}/dist/{index}/main/binary-{arch}/Packages.bz2', request_method='GET')       #
-    config.add_route('debian_poolpackage', '/api/v1/debian/{channel}/pool/{index}/{relic_name}', request_method='GET')                              #
+    config.add_route('debian_poolpackage', '/api/v1/debian/{channel}/pool/{index}/{relic_name}', request_method='GET')                              # x
     # additional paths that could be just a directory listing of some sort (like autoindex)
     config.add_route('debian_archindex', '/api/v1/debian/{channel}/dist/{index}/main/binary-{arch}/', request_method='GET')                         # x
     config.add_route('debian_compindex', '/api/v1/debian/{channel}/dist/{index}/main/', request_method='GET')                                       # x

@@ -37,3 +37,40 @@ class Relic(Base):
     name = Column(Text)
     mtime = Column(Text)
     size = Column(Integer)
+
+    # additional debinfo if relic is a debian file
+    debinfo = relationship("DebInfo", uselist=False, backref="relic", cascade="all, delete-orphan")
+
+
+class DebInfo(Base):
+    __tablename__ = "debinfo"
+    uid = Column(Integer, primary_key=True)
+    relic_id = Column(Integer, ForeignKey('relics.uid'))
+
+    filename = Column(Text)                         # Packages index: mandatory
+    #size = Column(Integer)                          # Packages index: mandatory -- see Relic.size
+    md5sum = Column(Text, nullable=True)            # Packages index: recommended
+    sha1 = Column(Text, nullable=True)              # Packages index: recommended
+    sha256 = Column(Text, nullable=True)            # Packages index: recommended
+    sha512 = Column(Text, nullable=True)            # Packages index: recommended
+    description_md5 = Column(Text, nullable=True)   # Packages index: optional
+
+    multi_arch = Column(Text, nullable=True)        # Packages index: if exists in control, needs to match exactly
+
+    package = Column(Text)                          # mandatory
+    source = Column(Text, nullable=True)            # optional
+    version = Column(Text)                          # mandatory
+    section = Column(Text, nullable=True)           # recommended
+    priority = Column(Text, nullable=True)          # recommended
+    architecture = Column(Text)                     # mandatory
+    essential = Column(Text, nullable=True)         # optional
+    depends = Column(Text, nullable=True)           # "depends et al" - Packages index: if exists in control, mandatory and needs to match exactly
+    recommends = Column(Text, nullable=True)        # "depends et al" - Packages index: if exists in control, mandatory and needs to match exactly
+    suggests = Column(Text, nullable=True)          # "depends et al" - Packages index: if exists in control, mandatory and needs to match exactly
+    enhances = Column(Text, nullable=True)          # "depends et al" - Packages index: if exists in control, mandatory and needs to match exactly
+    pre_depends = Column(Text, nullable=True)       # "depends et al" - Packages index: if exists in control, mandatory and needs to match exactly
+    installed_size = Column(Integer, nullable=True) # "depends et al" - Packages index: if exists in control, mandatory and needs to match exactly
+    maintainer = Column(Text)                       # mandatory
+    description = Column(Text)                      # mandatory
+    homepage = Column(Text, nullable=True)          # optional
+    built_using = Column(Text, nullable=True)       # optional
