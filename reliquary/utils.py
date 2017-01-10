@@ -310,3 +310,15 @@ def generate_debian_package_index(channel, index, arch):
         lines.append("")
 
     return "\n".join(lines)
+
+
+def get_unique_architectures_set(index_id):
+    arches = set()
+    relics = DBSession.query(Relic).filter_by(index_id=index_id)
+    for relic in relics:
+        parts = split_debian_name(relic.name)
+        if not parts or not parts[2]:
+            continue
+        arches.add(parts[2])
+
+    return arches

@@ -31,6 +31,7 @@ requires = [
     'pyramid_chameleon',
     'pyramid_debugtoolbar',
     'pyramid_tm',
+    'pytz',
     'requests',
     'sqlalchemy',
     'waitress',

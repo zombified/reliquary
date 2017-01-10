@@ -22,6 +22,17 @@ from reliquary.models import (
 logger = logging.getLogger(__name__)
 
 
+def pregenerate_deb_indices():
+    # get a set of channel/index names that contain relics with deb info
+    # for each channel/index
+    #   - generate arch Packages
+    #   - generate arch Packages.gz
+    #   - generate arch Packages.bz2
+    #   - generate arch Release
+    #   - generate component Release
+    pass
+
+
 def index_deb_info(name, path, obj, indexname):
     # relative to the repository root, which would be something
     # like /api/v1/{channel}/
@@ -263,6 +274,8 @@ def reindex():
             DBSession.query(Relic) \
                      .filter_by(dirty=True) \
                      .delete(synchronize_session=False)
+
+        pregenerate_deb_indices()
     except Exception as ex:
         logger.critical("something went wrong")
         logger.critical(ex)

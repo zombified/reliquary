@@ -1,4 +1,5 @@
 import bz2
+import datetime
 import logging
 import gzip
 import time
@@ -13,7 +14,7 @@ from reliquary.utils import (
     fetch_channel_from_name,
     fetch_index_from_names,
     generate_debian_package_index,
-    split_debian_name,
+    get_unique_architectures_set,
 )
 
 
@@ -176,15 +177,7 @@ def debian_compindex(req):
     if not indexobj:
         return HTTPNotFound()
 
-    # need to determine unique architectures of packages available
-    arches = set()
-    relics = DBSession.query(Relic).filter_by(index_id=indexobj.uid)
-    for relic in relics:
-        parts = split_debian_name(relic.name)
-        if not parts or not parts[2]:
-            continue
-        arches.add(parts[2])
-
+    arches = get_unique_architectures_set(indexobj.uid)
     items = []
     for arch in arches:
         items.append(dict(
@@ -335,3 +328,62 @@ def debian_archpackagesbz2(req):
     packagestr = generate_debian_package_index(channel, index, arch)
     bz2str = bz2.compress(packagestr.encode())
     return Response(bz2str, content_type="application/x-bzip2", status_code=200)
+
+
+@view_config(
+    route_name='debian_distrelease',
+    request_method='GET',
+    permission='view')
+def debian_distrelease(req):
+    channel = req.matchdict.get('channel', None)
+    index = req.matchdict.get('index', None)
+
+    if not channel or not index:
+        return HTTPNotFound()
+
+    indexobj = fetch_index_from_names(channel, index)
+    if not indexobj:
+        return HTTPNotFound()
+
+    lines = []
+
+    # Suite -- indicates one of 'oldstable', 'stable', 'testing', 'unstable',
+    #   'experimental' with optional suffixes such as '-updates'
+    # for now, fixed to 'stable'
+    # (required)
+    lines.append("Suite: stable")
+
+    # Codename -- describe codename of the release
+    # for now, fixed to 'reliquary'
+    # (required)
+    lines.append("Codename: reliquary")
+
+    # Architectures -- what are all the different architectures for packages
+    #   being managed?
+    # (required)
+    unique_arches = get_unique_architectures_set(indexobj.uid)
+    arches = []
+    for a in unique_arches:
+        arches.append(a)
+    lines.append("Architectures: {}".format(" ".join(arches)))
+
+    # Components -- this is a fixed and static value for now
+    # (required)
+    lines.append("Components: main")
+
+    # Date -- the time the release file was created in UTC
+    # (required)
+    utcnow = "{:%a, %b %Y %H:%M:%S +0000}".format(datetime.datetime.utcnow())
+    lines.append("Date: {}".format(utcnow))
+
+    # MD5Sum/SHA1/SHA256/SHA512 -- lists of indices and the hash and size for them
+    # each line contains white space separated values:
+    #   1. checksum in the corresponding format
+    #   2. size of the file
+    #   3. filename relative to the directory of the Release file
+
+
+    # Acquire-By-Hash -- an alternative method for clients, this is just an
+    #   indicator for whether or not the server supports this
+    # for now, reliquary does not support this
+    lines.append("Acquire-By-Hash: no")

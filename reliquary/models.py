@@ -1,4 +1,14 @@
-from sqlalchemy import Boolean, Column, Integer, ForeignKey, Text
+import datetime
+
+from sqlalchemy import (
+    Boolean,
+    Column,
+    Datetime,
+    ForeignKey,
+    Integer,
+    LargeBinary,
+    Text,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship, scoped_session, sessionmaker
 from zope.sqlalchemy import ZopeTransactionExtension
@@ -7,6 +17,17 @@ DBSession = scoped_session(sessionmaker(
     extension=ZopeTransactionExtension(),
     expire_on_commit=False))
 Base = declarative_base()
+
+
+# simple cache for certain files that need to be pregenerated
+class FileCache(Base):
+    __tablename__ = "rcache"
+    uid = Column(Integer, primary_key=True)
+
+    key = Column(Text)
+    value = Column(LargeBinary)
+    mtime = Column(Datetime, default=datetime.datetime.utcnow())
+    size = Column(Integer)
 
 
 class Channel(Base):
