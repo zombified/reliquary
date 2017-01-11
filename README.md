@@ -34,16 +34,14 @@ Currently implemented are:
   * caching proxy for https://pypi.python.org/
   * [CommonJS Package Registry](http://wiki.commonjs.org/wiki/Packages/Registry) compatible interface
   * caching proxy for https://registry.npmjs.org/
+  * debian repository compatible interface (as defined by [the debian wiki](https://wiki.debian.org/RepositoryFormat))
 
 Planned Features for the near future:
 
   * _configurable_ proxy upstream for python and commonjs end points
-  * configuration and mechanism for caching more than just file blobs
-    from upstreams
   * more work on authentication and authorization (more specific permissions,
     better mechanism for generating and storing basic auth keys, maybe private
     url scheme, maybe ldap integration)
-  * debian repository compatible interface (as defined by [the debian wiki](https://wiki.debian.org/RepositoryFormat))
   * debian repository compatible caching proxy
   * a mechanism for requesting a merged set of indices within a channel
 
