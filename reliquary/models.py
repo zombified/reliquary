@@ -3,7 +3,7 @@ import datetime
 from sqlalchemy import (
     Boolean,
     Column,
-    Datetime,
+    DateTime,
     ForeignKey,
     Integer,
     LargeBinary,
@@ -26,8 +26,11 @@ class FileCache(Base):
 
     key = Column(Text)
     value = Column(LargeBinary)
-    mtime = Column(Datetime, default=datetime.datetime.utcnow())
+    mtime = Column(DateTime, default=datetime.datetime.utcnow())
     size = Column(Integer)
+    md5sum = Column(Text)
+    sha1 = Column(Text)
+    sha256 = Column(Text)
 
 
 class Channel(Base):

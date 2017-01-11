@@ -1,10 +1,7 @@
-import bz2
-import datetime
 import logging
-import gzip
 import time
 
-from pyramid.httpexceptions import HTTPNotFound
+from pyramid.httpexceptions import HTTPNotFound, HTTPInternalServerError
 from pyramid.response import Response
 from pyramid.view import view_config
 
@@ -13,12 +10,46 @@ from reliquary.utils import (
     download_response,
     fetch_channel_from_name,
     fetch_index_from_names,
+    generate_debian_arch_release_index,
     generate_debian_package_index,
+    get_debian_release_data,
     get_unique_architectures_set,
 )
 
 
 logger = logging.getLogger(__name__)
+
+
+def packages_view(req, compression=None):
+    channel = req.matchdict.get('channel', None)
+    index = req.matchdict.get('index', None)
+    arch = req.matchdict.get('arch', None)
+
+    if not channel or not index or not arch:
+        return HTTPNotFound()
+
+    arch = arch.lower().strip()
+
+    indexobj = fetch_index_from_names(channel, index)
+    if not indexobj:
+        return HTTPNotFound()
+
+    pkgdata = generate_debian_package_index(
+        channel,
+        index,
+        arch,
+        compression=compression)
+
+    if not pkgdata:
+        return HTTPInternalServerError()
+
+    contenttype = 'text/plain'
+    if compression == 'gz':
+        contenttype = 'application/gzip'
+    elif compression == 'bz2':
+        contenttype = 'application/x-bzip2'
+
+    return Response(pkgdata[0], content_type=contenttype, status_code=200)
 
 
 def fetch_channel_index_items(req, channelobj, route_name):
@@ -150,6 +181,11 @@ def debian_distindex(req):
                                index=index),
              text="main",
              cls="folder"),
+        dict(url=req.route_url('debian_distinrelease',
+                               channel=channel,
+                               index=index),
+             text="InRelease",
+             cls="file"),
         dict(url=req.route_url('debian_distrelease',
                                channel=channel,
                                index=index),
@@ -267,21 +303,7 @@ def debian_poolpackage(req):
     request_method='GET',
     permission='view')
 def debian_archpackages(req):
-    channel = req.matchdict.get('channel', None)
-    index = req.matchdict.get('index', None)
-    arch = req.matchdict.get('arch', None)
-
-    if not channel or not index or not arch:
-        return HTTPNotFound()
-
-    arch = arch.lower().strip()
-
-    indexobj = fetch_index_from_names(channel, index)
-    if not indexobj:
-        return HTTPNotFound()
-
-    packagestr = generate_debian_package_index(channel, index, arch)
-    return Response(packagestr, content_type="text/plain", status_code=200)
+    return packages_view(req)
 
 
 @view_config(
@@ -289,22 +311,7 @@ def debian_archpackages(req):
     request_method='GET',
     permission='view')
 def debian_archpackagesgz(req):
-    channel = req.matchdict.get('channel', None)
-    index = req.matchdict.get('index', None)
-    arch = req.matchdict.get('arch', None)
-
-    if not channel or not index or not arch:
-        return HTTPNotFound()
-
-    arch = arch.lower().strip()
-
-    indexobj = fetch_index_from_names(channel, index)
-    if not indexobj:
-        return HTTPNotFound()
-
-    packagestr = generate_debian_package_index(channel, index, arch)
-    gzstr = gzip.compress(packagestr.encode())
-    return Response(gzstr, content_type="application/gzip", status_code=200)
+    return packages_view(req, compression='gz')
 
 
 @view_config(
@@ -312,22 +319,7 @@ def debian_archpackagesgz(req):
     request_method='GET',
     permission='view')
 def debian_archpackagesbz2(req):
-    channel = req.matchdict.get('channel', None)
-    index = req.matchdict.get('index', None)
-    arch = req.matchdict.get('arch', None)
-
-    if not channel or not index or not arch:
-        return HTTPNotFound()
-
-    arch = arch.lower().strip()
-
-    indexobj = fetch_index_from_names(channel, index)
-    if not indexobj:
-        return HTTPNotFound()
-
-    packagestr = generate_debian_package_index(channel, index, arch)
-    bz2str = bz2.compress(packagestr.encode())
-    return Response(bz2str, content_type="application/x-bzip2", status_code=200)
+    return packages_view(req, compression='bz2')
 
 
 @view_config(
@@ -345,45 +337,18 @@ def debian_distrelease(req):
     if not indexobj:
         return HTTPNotFound()
 
-    lines = []
-
-    # Suite -- indicates one of 'oldstable', 'stable', 'testing', 'unstable',
-    #   'experimental' with optional suffixes such as '-updates'
-    # for now, fixed to 'stable'
-    # (required)
-    lines.append("Suite: stable")
-
-    # Codename -- describe codename of the release
-    # for now, fixed to 'reliquary'
-    # (required)
-    lines.append("Codename: reliquary")
-
-    # Architectures -- what are all the different architectures for packages
-    #   being managed?
-    # (required)
-    unique_arches = get_unique_architectures_set(indexobj.uid)
-    arches = []
-    for a in unique_arches:
-        arches.append(a)
-    lines.append("Architectures: {}".format(" ".join(arches)))
-
-    # Components -- this is a fixed and static value for now
-    # (required)
-    lines.append("Components: main")
-
-    # Date -- the time the release file was created in UTC
-    # (required)
-    utcnow = "{:%a, %b %Y %H:%M:%S +0000}".format(datetime.datetime.utcnow())
-    lines.append("Date: {}".format(utcnow))
-
-    # MD5Sum/SHA1/SHA256/SHA512 -- lists of indices and the hash and size for them
-    # each line contains white space separated values:
-    #   1. checksum in the corresponding format
-    #   2. size of the file
-    #   3. filename relative to the directory of the Release file
+    data = get_debian_release_data(indexobj.uid)
+    return Response(data.encode(), content_type='text/plain', status_code=200)
 
 
-    # Acquire-By-Hash -- an alternative method for clients, this is just an
-    #   indicator for whether or not the server supports this
-    # for now, reliquary does not support this
-    lines.append("Acquire-By-Hash: no")
+@view_config(
+    route_name='debian_archrelease',
+    request_method='GET',
+    permission='view')
+def debian_archrelease(req):
+    arch = req.matchdict.get('arch', None)
+    if not arch:
+        return HTTPNotFound()
+
+    data = generate_debian_arch_release_index(arch)
+    return Response(data[0], content_type='text/plain', status_code=200)

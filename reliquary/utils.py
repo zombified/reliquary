@@ -1,3 +1,7 @@
+import bz2
+import datetime
+import gzip
+import hashlib
 import logging
 import os
 import re
@@ -12,6 +16,7 @@ from reliquary.models import (
     Channel,
     DBSession,
     DebInfo,
+    FileCache,
     Index,
     Relic,
 )
@@ -257,7 +262,68 @@ def split_debian_name(name):
     return None
 
 
-def generate_debian_package_index(channel, index, arch):
+# 'compression' can be one of None, 'gz', or 'bz2'
+# if 'force' is True, the data is not pulled from the database
+def generate_debian_package_index(channel, index, arch, compression=None, force=False):
+    basekey = '{}-{}-{}-'.format(channel, index, arch)
+    key = basekey
+    key += compression if compression else 'none'
+    if not force:
+        try:
+            cacheddata = DBSession.query(FileCache).filter_by(key=key).one_or_none()
+            if cacheddata:
+                return (cacheddata.value,
+                        cacheddata.mtime,
+                        cacheddata.size,
+                        cacheddata.md5sum,
+                        cacheddata.sha1,
+                        cacheddata.sha256)
+        except:
+            logger.error('multiple values with cache key "{}"'.format(key))
+            return None
+    else:
+        with transaction.manager:
+            DBSession.query(FileCache).filter(key=key).delete()
+
+    # since the request is for a compressed file, check to see if we have a cached
+    # uncompressed file first, and base our compressed one off of that...
+    # mainly so the cached files remain in sync in terms of content
+    if compression:
+        uncompressedkey = basekey + 'none'
+        try:
+            cacheddata = DBSession.query(FileCache).filter_by(key=uncompressedkey).one_or_none()
+            if cacheddata:
+                bytedata = cacheddata.value
+                if compression == "gz":
+                    finaldata = gzip.compress(bytedata)
+                elif compression == "bz2":
+                    finaldata = bz2.compress(bytedata)
+                else:
+                    finaldata = bytedata
+
+                mtime = datetime.datetime.utcnow()
+                size = len(finaldata)
+                md5sum = hashlib.md5(finaldata).hexdigest()
+                sha1 = hashlib.sha1(finaldata).hexdigest()
+                sha256 = hashlib.sha256(finaldata).hexdigest()
+                newcacheddata = FileCache(
+                    key=key,
+                    value=finaldata,
+                    mtime=mtime,
+                    size=size,
+                    md5sum=md5sum,
+                    sha1=sha1,
+                    sha256=sha256)
+                with transaction.manager:
+                    DBSession.add(newcacheddata)
+
+                return (finaldata, mtime, size, md5sum, sha1, sha256)
+        except:
+            logger.error('multiple values with cache key "{}"'.format(uncompressedkey))
+            return None
+
+
+    # generate and cache Package file
     lines = []
     archobjs = DBSession.query(Relic, DebInfo) \
                         .filter(Relic.uid == DebInfo.relic_id) \
@@ -309,7 +375,32 @@ def generate_debian_package_index(channel, index, arch):
             lines.append("Multi-Arch: {}".format(debinfo.multi_arch))
         lines.append("")
 
-    return "\n".join(lines)
+    data = "\n".join(lines)
+    bytedata = data.encode()
+    if compression == "gz":
+        finaldata = gzip.compress(bytedata)
+    elif compression == "bz2":
+        finaldata = bz2.compress(bytedata)
+    else:
+        finaldata = bytedata
+
+    mtime = datetime.datetime.utcnow()
+    size = len(finaldata)
+    md5sum = hashlib.md5(finaldata).hexdigest()
+    sha1 = hashlib.sha1(finaldata).hexdigest()
+    sha256 = hashlib.sha256(finaldata).hexdigest()
+    newcacheddata = FileCache(
+        key=key,
+        value=finaldata,
+        mtime=mtime,
+        size=size,
+        md5sum=md5sum,
+        sha1=sha1,
+        sha256=sha256)
+    with transaction.manager:
+        DBSession.add(newcacheddata)
+
+    return (finaldata, mtime, size, md5sum, sha1, sha256)
 
 
 def get_unique_architectures_set(index_id):
@@ -322,3 +413,116 @@ def get_unique_architectures_set(index_id):
         arches.add(parts[2])
 
     return arches
+
+
+def generate_debian_arch_release_index(arch):
+    data = """Archive: reliquary
+Component: main
+Origin: reliquary
+Label: reliquary
+Architecture: {architecture}""".format(architecture=arch)
+    mtime = datetime.datetime.utcnow()
+    size = len(data)
+    bytedata = data.encode()
+    md5sum = hashlib.md5(bytedata).hexdigest()
+    sha1 = hashlib.sha1(bytedata).hexdigest()
+    sha256 = hashlib.sha256(bytedata).hexdigest()
+    return (data, mtime, size, md5sum, sha1, sha256)
+
+
+def get_debian_release_data(index_id):
+    lines = []
+
+    # Suite -- indicates one of 'oldstable', 'stable', 'testing', 'unstable',
+    #   'experimental' with optional suffixes such as '-updates'
+    # for now, fixed to 'stable'
+    # (required)
+    lines.append("Suite: stable")
+
+    # Codename -- describe codename of the release
+    # for now, fixed to 'reliquary'
+    # (required)
+    lines.append("Codename: reliquary")
+
+    # Origin -- describe origin of the release
+    # for now, fixed to 'reliquary'
+    # (optional)
+    lines.append("Origin: reliquary")
+
+    # Architectures -- what are all the different architectures for packages
+    #   being managed?
+    # (required)
+    unique_arches = get_unique_architectures_set(index_id)
+    arches = []
+    for a in unique_arches:
+        arches.append(a)
+    lines.append("Architectures: {}".format(" ".join(arches)))
+
+    # Components -- this is a fixed and static value for now
+    # (required)
+    lines.append("Components: main")
+
+    # Date -- the time the release file was created in UTC
+    # (required)
+    utcnow = "{:%a, %b %Y %H:%M:%S +0000}".format(datetime.datetime.utcnow())
+    lines.append("Date: {}".format(utcnow))
+
+    # MD5Sum/SHA1/SHA256/SHA512 -- lists of indices and the hash and size for them
+    # each line contains white space separated values:
+    #   1. checksum in the corresponding format
+    #   2. size of the file
+    #   3. filename relative to the directory of the Release file
+    indexobj = DBSession.query(Index).filter_by(uid=index_id).one()
+    index = indexobj.name
+    channel = DBSession.query(Channel).filter_by(uid=indexobj.channel_id).one().name
+    arches = get_unique_architectures_set(index_id)
+    md5sums = []
+    sha1s = []
+    sha256s = []
+    for arch in arches:
+        package = generate_debian_package_index(channel, index, arch)
+        packagegz = generate_debian_package_index(channel, index, arch, compression='gz')
+        packagebz2 = generate_debian_package_index(channel, index, arch, compression='bz2')
+        release = generate_debian_arch_release_index(arch)
+        # uncompressed
+        if not package:
+            logger.error("Failed to get package details for debian/{}/dist/{}/[In]Release ({})".format(channel, index, arch))
+        else:
+            md5sums.append(" {} {} {}".format(package[3], str(package[2]).rjust(15), "main/binary-{}/Packages".format(arch)))
+            sha1s.append(" {} {} {}".format(package[4], str(package[2]).rjust(15), "main/binary-{}/Packages".format(arch)))
+            sha256s.append(" {} {} {}".format(package[5], str(package[2]).rjust(15), "main/binary-{}/Packages".format(arch)))
+        # gz
+        if not packagegz:
+            logger.error("Failed to get package.gz details for debian/{}/dist/{}/[In]Release ({})".format(channel, index, arch))
+        else:
+            md5sums.append(" {} {} {}".format(packagegz[3], str(packagegz[2]).rjust(15), "main/binary-{}/Packages.gz".format(arch)))
+            sha1s.append(" {} {} {}".format(packagegz[4], str(packagegz[2]).rjust(15), "main/binary-{}/Packages.gz".format(arch)))
+            sha256s.append(" {} {} {}".format(packagegz[5], str(packagegz[2]).rjust(15), "main/binary-{}/Packages.gz".format(arch)))
+        # bz2
+        if not packagebz2:
+            logger.error("Failed to get package.bz2 details for debian/{}/dist/{}/[In]Release ({})".format(channel, index, arch))
+        else:
+            md5sums.append(" {} {} {}".format(packagebz2[3], str(packagebz2[2]).rjust(15), "main/binary-{}/Packages.bz2".format(arch)))
+            sha1s.append(" {} {} {}".format(packagebz2[4], str(packagebz2[2]).rjust(15), "main/binary-{}/Packages.bz2".format(arch)))
+            sha256s.append(" {} {} {}".format(packagebz2[5], str(packagebz2[2]).rjust(15), "main/binary-{}/Packages.bz2".format(arch)))
+        # release
+        if not release:
+            logger.error("Failed to get release details for debian/{}/dist/{}/[In]Release ({})".format(channel, index, arch))
+        else:
+            md5sums.append(" {} {} {}".format(release[3], str(release[2]).rjust(15), "main/binary-{}/Release".format(arch)))
+            sha1s.append(" {} {} {}".format(release[4], str(release[2]).rjust(15), "main/binary-{}/Release".format(arch)))
+            sha256s.append(" {} {} {}".format(release[5], str(release[2]).rjust(15), "main/binary-{}/Release".format(arch)))
+
+    lines.append("MD5Sum:")
+    lines.append("\n".join(md5sums))
+    lines.append("SHA1:")
+    lines.append("\n".join(sha1s))
+    lines.append("SHA256:")
+    lines.append("\n".join(sha256s))
+
+    # Acquire-By-Hash -- an alternative method for clients, this is just an
+    #   indicator for whether or not the server supports this
+    # for now, reliquary does not support this
+    lines.append("Acquire-By-Hash: no")
+
+    return "\n".join(lines)

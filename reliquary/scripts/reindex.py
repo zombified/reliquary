@@ -17,20 +17,39 @@ from reliquary.models import (
     Index,
     Relic,
 )
+from reliquary.utils import (
+    generate_debian_package_index,
+    get_unique_architectures_set,
+)
 
 
 logger = logging.getLogger(__name__)
 
 
 def pregenerate_deb_indices():
-    # get a set of channel/index names that contain relics with deb info
+    # channel + index containing relics with cached deb info
+    indices = DBSession.query(Channel.name, Channel.uid, Index.name, Index.uid) \
+                       .filter(Index.channel_id == Channel.uid) \
+                       .filter(Relic.index_id == Index.uid) \
+                       .filter(DebInfo.relic_id == Relic.uid) \
+                       .distinct()
+
+    for (channel, chanid, index, indexid) in indices:
+        arches = get_unique_architectures_set(indexid)
+        for arch in arches:
+            if not generate_debian_package_index(channel, index, arch, force=True):
+                logger.error("Failed to generate package for debian/{}/dist/{}/main/binary-{}".format(channel, index, arch))
+            if not generate_debian_package_index(channel, index, arch, compression='gz', force=True):
+                logger.error("Failed to generate package.gz for debian/{}/dist/{}/main/binary-{}".format(channel, index, arch))
+            if not generate_debian_package_index(channel, index, arch, compression='bz2', force=True):
+                logger.error("Failed to generate package.bz2 for debian/{}/dist/{}/main/binary-{}".format(channel, index, arch))
+
     # for each channel/index
     #   - generate arch Packages
     #   - generate arch Packages.gz
     #   - generate arch Packages.bz2
     #   - generate arch Release
     #   - generate component Release
-    pass
 
 
 def index_deb_info(name, path, obj, indexname):
