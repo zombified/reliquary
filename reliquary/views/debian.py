@@ -181,11 +181,6 @@ def debian_distindex(req):
                                index=index),
              text="main",
              cls="folder"),
-        dict(url=req.route_url('debian_distinrelease',
-                               channel=channel,
-                               index=index),
-             text="InRelease",
-             cls="file"),
         dict(url=req.route_url('debian_distrelease',
                                channel=channel,
                                index=index),
@@ -338,7 +333,7 @@ def debian_distrelease(req):
         return HTTPNotFound()
 
     data = get_debian_release_data(indexobj.uid)
-    return Response(data.encode(), content_type='text/plain', status_code=200)
+    return Response(data, content_type='text/plain', status_code=200)
 
 
 @view_config(

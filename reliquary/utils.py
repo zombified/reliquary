@@ -283,7 +283,7 @@ def generate_debian_package_index(channel, index, arch, compression=None, force=
             return None
     else:
         with transaction.manager:
-            DBSession.query(FileCache).filter(key=key).delete()
+            DBSession.query(FileCache).filter_by(key=key).delete()
 
     # since the request is for a compressed file, check to see if we have a cached
     # uncompressed file first, and base our compressed one off of that...
@@ -430,7 +430,24 @@ Architecture: {architecture}""".format(architecture=arch)
     return (data, mtime, size, md5sum, sha1, sha256)
 
 
-def get_debian_release_data(index_id):
+def get_debian_release_data(index_id, force=False):
+    indexobj = DBSession.query(Index).filter_by(uid=index_id).one()
+    index = indexobj.name
+    channel = DBSession.query(Channel).filter_by(uid=indexobj.channel_id).one().name
+
+    key = "{}-{}-release"
+    if not force:
+        try:
+            cacheddata = DBSession.query(FileCache).filter_by(key=key).one_or_none()
+            if cacheddata:
+                return cacheddata.value
+        except:
+            logger.error("apparently there's more than one release cached file for /{}/dist/{}/Release".format(channel, index))
+            return None
+    else:
+        with transaction.manager:
+            DBSession.query(FileCache).filter_by(key=key).delete()
+
     lines = []
 
     # Suite -- indicates one of 'oldstable', 'stable', 'testing', 'unstable',
@@ -464,7 +481,7 @@ def get_debian_release_data(index_id):
 
     # Date -- the time the release file was created in UTC
     # (required)
-    utcnow = "{:%a, %b %Y %H:%M:%S +0000}".format(datetime.datetime.utcnow())
+    utcnow = "{:%a, %b %d %Y %H:%M:%S +0000}".format(datetime.datetime.utcnow())
     lines.append("Date: {}".format(utcnow))
 
     # MD5Sum/SHA1/SHA256/SHA512 -- lists of indices and the hash and size for them
@@ -472,9 +489,6 @@ def get_debian_release_data(index_id):
     #   1. checksum in the corresponding format
     #   2. size of the file
     #   3. filename relative to the directory of the Release file
-    indexobj = DBSession.query(Index).filter_by(uid=index_id).one()
-    index = indexobj.name
-    channel = DBSession.query(Channel).filter_by(uid=indexobj.channel_id).one().name
     arches = get_unique_architectures_set(index_id)
     md5sums = []
     sha1s = []
@@ -525,4 +539,18 @@ def get_debian_release_data(index_id):
     # for now, reliquary does not support this
     lines.append("Acquire-By-Hash: no")
 
-    return "\n".join(lines)
+    data = "\n".join(lines)
+    bytedata = data.encode()
+
+    with transaction.manager:
+        DBSession.add(FileCache(
+            key=key,
+            value=bytedata,
+            mtime=datetime.datetime.utcnow(),
+            size=len(data),
+            md5sum=hashlib.md5(bytedata).hexdigest(),
+            sha1=hashlib.sha1(bytedata).hexdigest(),
+            sha256=hashlib.sha256(bytedata).hexdigest(),
+        ))
+
+    return data

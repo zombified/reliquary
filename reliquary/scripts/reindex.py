@@ -19,6 +19,7 @@ from reliquary.models import (
 )
 from reliquary.utils import (
     generate_debian_package_index,
+    get_debian_release_data,
     get_unique_architectures_set,
 )
 
@@ -44,12 +45,7 @@ def pregenerate_deb_indices():
             if not generate_debian_package_index(channel, index, arch, compression='bz2', force=True):
                 logger.error("Failed to generate package.bz2 for debian/{}/dist/{}/main/binary-{}".format(channel, index, arch))
 
-    # for each channel/index
-    #   - generate arch Packages
-    #   - generate arch Packages.gz
-    #   - generate arch Packages.bz2
-    #   - generate arch Release
-    #   - generate component Release
+        get_debian_release_data(indexid, force=True)
 
 
 def index_deb_info(name, path, obj, indexname):
