@@ -63,9 +63,10 @@ setup(name='reliquary',
       install_requires=requires,
       entry_points={
           'plone.server': [
-              'include = pserver.courier',
+              'include = pserver.reliquary',
           ],
           'console_scripts': [
+              'rindexer = pserver.reliquary.commands:Indexer',
               'init_reliquary = reliquary.scripts:init_reliquary',
               'reindex_reliquary = reliquary.scripts:reindex',
           ],
