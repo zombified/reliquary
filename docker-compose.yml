@@ -1,0 +1,17 @@
+version: '2'
+services:
+    zeoserver:
+        build: ./zeoserver/
+        image: zeo
+    pserver:
+        build: .
+        image: reliquary
+        volumes:
+            - .:/app/
+        ports:
+            - "8080:8080"
+        command: /usr/local/bin/pserver -c /app/config.json
+        links:
+            - zeoserver
+        depends_on:
+            - zeoserver

@@ -6,6 +6,15 @@
     "reliquary": {},
 
 	"databases": [{
+        "zeo": {
+            "storage": "ZEO",
+            "address": "zeoserver",
+            "port": 8100,
+            "configuration": {
+                "pool_size": 100,
+                "cache_size": 100
+            }
+        },
 		"zodb": {
 			"storage": "ZODB",
 			"path": "var/Data.fs"
