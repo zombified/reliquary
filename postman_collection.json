@@ -1,0 +1,231 @@
+{
+	"variables": [],
+	"info": {
+		"name": "reliquary pserver",
+		"_postman_id": "bd823ca2-33ed-f5c4-9069-4bb620182b3f",
+		"description": "",
+		"schema": "https://schema.getpostman.com/json/collection/v2.0.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "create site",
+			"request": {
+				"url": "http://127.0.0.1:8080/zeo/",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Basic cm9vdDphZG1pbg==",
+						"description": ""
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"@type\": \"Site\",\n\t\"title\": \"Reliquary\",\n\t\"id\": \"reliquary\",\n\t\"description\": \"Software artifact reliquary\"\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "get reliquary site",
+			"request": {
+				"url": "http://127.0.0.1:8080/zeo/reliquary",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Basic cm9vdDphZG1pbg==",
+						"description": ""
+					}
+				],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "create channel",
+			"request": {
+				"url": "http://127.0.0.1:8080/zeo/reliquary/",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic cm9vdDphZG1pbg==",
+						"description": ""
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"@type\": \"Channel\",\n\t\"title\": \"Test\",\n\t\"id\": \"test\"\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "get channel",
+			"request": {
+				"url": "http://127.0.0.1:8080/zeo/reliquary/test/",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Basic cm9vdDphZG1pbg==",
+						"description": ""
+					}
+				],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "create index",
+			"request": {
+				"url": "http://127.0.0.1:8080/zeo/reliquary/test/",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic cm9vdDphZG1pbg==",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"@type\": \"RelicIndex\",\n\t\"title\": \"Index1\",\n\t\"id\": \"index1\"\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "get index",
+			"request": {
+				"url": "http://127.0.0.1:8080/zeo/reliquary/test/index1/",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Basic cm9vdDphZG1pbg==",
+						"description": ""
+					}
+				],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "add file object",
+			"request": {
+				"url": "http://127.0.0.1:8080/zeo/reliquary/test/index1/",
+				"method": "POST",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic cm9vdDphZG1pbg==",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n\t\"@type\": \"Relic\",\n\t\"title\": \"browserify-0.0.1.tgz\",\n\t\"id\": \"browserify-0.0.1.tgz\"\n}"
+				},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "get file object",
+			"request": {
+				"url": "http://127.0.0.1:8080/zeo/reliquary/test/index1/browserify-0.0.1.tgz",
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Basic cm9vdDphZG1pbg==",
+						"description": ""
+					}
+				],
+				"body": {},
+				"description": ""
+			},
+			"response": []
+		},
+		{
+			"name": "add file data",
+			"request": {
+				"url": "http://127.0.0.1:8080/zeo/reliquary/test/index1/browserify-0.0.1.tgz/@upload/file",
+				"method": "PATCH",
+				"header": [
+					{
+						"key": "Content-Type",
+						"value": "application/x-www-form-urlencoded",
+						"description": ""
+					},
+					{
+						"key": "Accept",
+						"value": "application/json",
+						"description": ""
+					},
+					{
+						"key": "Authorization",
+						"value": "Basic cm9vdDphZG1pbg==",
+						"description": ""
+					}
+				],
+				"body": {
+					"mode": "file",
+					"file": {
+						"src": ""
+					}
+				},
+				"description": ""
+			},
+			"response": []
+		}
+	]
+}
