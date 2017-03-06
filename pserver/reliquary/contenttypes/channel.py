@@ -17,7 +17,7 @@ class IChannel(IItem):
         'plone.server.behaviors.dublincore.IDublinCore',
     ],
     allowed_types=[
-        'pserver.reliquary.contenttypes.RelicIndex',
+        'RelicIndex',
     ])
 class Channel(Folder):
     pass

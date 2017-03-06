@@ -7,7 +7,6 @@ from zope import schema
 # a relic is a set of metadata describing, and file data containing, an
 # software/data distribution of some sort
 class IRelic(IItem):
-    filename = schema.Text()
     mtime = schema.Text()
     size = schema.Int()
 
@@ -17,6 +16,7 @@ class IRelic(IItem):
     schema=IRelic,
     behaviors=[
         'plone.server.behaviors.dublincore.IDublinCore',
+        'plone.server.behaviors.attachment.IAttachment',
     ])
 class Relic(Item):
     pass

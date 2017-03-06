@@ -5,6 +5,8 @@
     ],
     "reliquary": {},
 
+    "api_definition": {},
+
 	"databases": [{
         "zeo": {
             "storage": "ZEO",

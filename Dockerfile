@@ -10,7 +10,8 @@ ENV LANG C.UTF-8
 ENV LANGUAGE C.UTF-8
 ENV LC_ALL C.UTF-8
 
-RUN cd /app; pip install -r requirements.txt --upgrade
+RUN cd /app; pip install -r requirements.txt --upgrade \
+    && python setup.py develop
 
 WORKDIR /app
 

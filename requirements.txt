@@ -1,4 +1,6 @@
-# only need the git version if there's a bug fixed or a feature in master
-#git+https://github.com/plone/plone.server@master#plone.server
+ZEO
 
-plone.server
+# only need the git version if there's a bug fixed or a feature in master
+git+https://github.com/plone/plone.server@master#plone.server
+
+#plone.server

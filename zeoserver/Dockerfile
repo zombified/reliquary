@@ -1,6 +1,6 @@
 FROM python:3.5-slim
 
-RUN mkdir /data/
+RUN mkdir -p /data/blobstorage
 
 RUN apt-get update -y \
     && apt-get install -y locales git-core gcc g++ netcat libxml2-dev libxslt-dev libz-dev \
