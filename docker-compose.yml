@@ -1,0 +1,25 @@
+# this compose script is meant JUST for development purposes... 
+# if that wasn't immediately obvious :)
+#
+version: '3'
+services:
+    db:
+        image: postgres
+        environment:
+            - POSTGRES_PASSWORD=pass
+            - POSTGRES_DB=reliquary
+
+    reliquary:
+        build: .
+        image: reliquary
+        entrypoint: sh /docker-entrypoint.sh
+        command: pserve etc/docker.ini
+        volumes:
+            - .:/code
+            - ./storage:/storage
+        ports:
+            - "6543:6543"
+        links:
+            - db
+        depends_on:
+            - db
