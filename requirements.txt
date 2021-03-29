@@ -10,7 +10,7 @@ PasteDeploy==1.5.2
 plaster==0.5
 plaster-pastedeploy==0.3.1
 psycopg2==2.7.2
-Pygments==2.2.0
+Pygments==2.7.4
 pyramid==1.9
 pyramid-chameleon==0.3
 pyramid-debugtoolbar==4.2
