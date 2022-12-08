@@ -1,4 +1,4 @@
-certifi==2017.4.17
+certifi==2022.12.7
 Chameleon==3.1
 chardet==3.0.4
 hupper==1.0
